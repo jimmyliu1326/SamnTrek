@@ -10,8 +10,6 @@ A local NCBI Pathogen Detection search tool to investigate/explore local *Salmon
 
 ## Usage
 
-Now, you can run the pipeline using:
-
 ```bash
 nextflow run jimmyliu1326/samntrek \
    -profile <docker/singularity/.../institute> \
