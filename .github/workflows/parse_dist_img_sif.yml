@@ -31,7 +31,7 @@ jobs:
         env:
           recipe: singularity.def
         run: |
-            sudo -E singularity build container.sif ${{ env.recipe }}
+            singularity build container.sif ${{ env.recipe }}
 
       - name: Login and Deploy Container
         run: |         
