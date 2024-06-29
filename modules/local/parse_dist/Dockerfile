@@ -1,5 +1,5 @@
 FROM mambaorg/micromamba:1.5.8-lunar
-COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./modules/local/parse_distconda.yml /tmp/conda.yml
 RUN micromamba install -y -n base -f /tmp/conda.yml \
     && micromamba install -y -n base conda-forge::procps-ng \
     && micromamba clean -a -y
