@@ -34,6 +34,7 @@ jobs:
             sudo -E singularity build container.sif ${{ env.recipe }}
 
       - name: Login and Deploy Container
+        working-directory: ./modules/local/parse_dist/
         run: |         
             echo ${{ secrets.MY_PAT }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
-            singularity push ./modules/local/parse_dist/container.sif oras://ghcr.io/${{ env.img_name }}:latest
+            singularity push container.sif oras://ghcr.io/${{ env.img_name }}:latest
