@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: quay.io/singularity/singularity:v4.1.0-slim
+      image: quay.io/singularity/singularity:v3.8.1
       options: --privileged
 
     steps:
@@ -31,7 +31,7 @@ jobs:
         env:
           recipe: singularity.def
         run: |
-            singularity build container.sif ${{ env.recipe }}
+            sudo -E singularity build container.sif ${{ env.recipe }}
 
       - name: Login and Deploy Container
         run: |         
