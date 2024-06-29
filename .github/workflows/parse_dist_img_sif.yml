@@ -1,0 +1,39 @@
+name: PARSE_DIST Singularity Image CI
+
+on:
+  push:
+    paths:
+      - modules/local/parse_dist/**
+  workflow_dispatch:
+
+env:
+  img_name: ${{ secrets.DOCKERHUB_USERNAME }}/samntrek-parse-dist
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-containers:
+    runs-on: ubuntu-latest
+
+    container:
+      image: quay.io/singularity/singularity:v${{ matrix.singularity_version }}
+      options: --privileged
+
+    steps:
+
+      - name: Check out code for the container builds
+        uses: actions/checkout@v2 
+
+      - name: Build Container
+        context: ./modules/local/parse_dist/
+        env:
+          recipe: singularity.def
+        run: |
+            sudo -E singularity build container.sif ${{ env.recipe }}
+
+      - name: Login and Deploy Container
+        run: |         
+            echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
+            singularity push container.sif oras://ghcr.io/${env.img_name}:latest
