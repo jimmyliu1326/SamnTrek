@@ -34,8 +34,6 @@ jobs:
             sudo -E singularity build container.sif ${{ env.recipe }}
 
       - name: Login and Deploy Container
-        working-directory: ./modules/local/parse_dist/
         run: |         
             echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
-            ls
-            singularity push container.sif oras://ghcr.io/jimmyliu1326/samntrek-parse-dist:latest
+            singularity push ./modules/local/parse_dist/container.sif oras://ghcr.io/jimmyliu1326/samntrek-parse-dist:latest
