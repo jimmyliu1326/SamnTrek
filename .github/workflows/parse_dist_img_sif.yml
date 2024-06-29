@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: quay.io/singularity/singularity:v${{ matrix.singularity_version }}
+      image: quay.io/singularity/singularity
       options: --privileged
 
     steps:
