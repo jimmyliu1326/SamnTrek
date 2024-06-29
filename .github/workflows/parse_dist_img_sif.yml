@@ -38,4 +38,4 @@ jobs:
         run: |         
             echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
             ls
-            singularity push container.sif oras://ghcr.io/${{ env.img_name }}:latest
+            singularity push container.sif oras://ghcr.io/jimmyliu1326/samntrek-parse-dist:latest
