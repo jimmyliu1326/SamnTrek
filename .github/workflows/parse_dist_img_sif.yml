@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: quay.io/singularity/singularity
+      image: quay.io/singularity/singularity:v4.1.0-slim
       options: --privileged
 
     steps:
