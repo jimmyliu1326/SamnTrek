@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v2 
 
       - name: Build Container
-        context: ./modules/local/parse_dist/
+        working-directory: ./modules/local/parse_dist/
         env:
           recipe: singularity.def
         run: |
