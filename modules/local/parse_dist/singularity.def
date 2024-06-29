@@ -1,0 +1,10 @@
+BootStrap: docker
+From: mambaorg/micromamba:1.5.8-lunar
+%files
+    ./conda.yml /scratch/conda.yml
+%post
+    micromamba install -y -n base -f /scratch/conda.yml
+    micromamba install -y -n base conda-forge::procps-ng
+    micromamba clean -a -y
+%environment
+    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
