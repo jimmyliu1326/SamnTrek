@@ -1,0 +1,40 @@
+name: PARSE_DIST Singularity Image CI
+
+on:
+  push:
+    paths:
+      - modules/local/dist2ngbrs/**
+  workflow_dispatch:
+
+env:
+  img_name: ${{ github.actor }}/samntrek-dist2ngbrs
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-containers:
+    runs-on: ubuntu-latest
+
+    container:
+      image: quay.io/singularity/singularity:v3.8.1
+      options: --privileged
+
+    steps:
+
+      - name: Check out code for the container builds
+        uses: actions/checkout@v2 
+
+      - name: Build Container
+        working-directory: ./modules/local/dist2ngbrs/
+        env:
+          recipe: singularity.def
+        run: |
+            sudo -E singularity build container.sif ${{ env.recipe }}
+
+      - name: Login and Deploy Container
+        working-directory: ./modules/local/dist2ngbrs/
+        run: |         
+            echo ${{ secrets.MY_PAT }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
+            singularity push container.sif oras://ghcr.io/${{ env.img_name }}:latest
