@@ -1,0 +1,11 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-argparse=2.2.2=r42hc72bb7e_1
+  - r-tidyverse=2.0.0=r42h785f33e_1
+  - r-data.table=1.14.10=r42h029312a_1
+  - r-dbscan=1.1_12=r42ha503ecb_0
+  - r-cluster=2.1.6=r43hcbafff3_1
+  - r-furrr=0.3.1=r42hc72bb7e_2
