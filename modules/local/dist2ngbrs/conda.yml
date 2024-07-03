@@ -3,6 +3,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  - r-base=4.2.3=hc446a09_12
   - r-argparse=2.2.2=r42hc72bb7e_1
   - r-tidyverse=2.0.0=r42h785f33e_1
   - r-data.table=1.14.10=r42h029312a_1
