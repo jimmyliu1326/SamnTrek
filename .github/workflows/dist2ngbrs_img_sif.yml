@@ -1,4 +1,4 @@
-name: PARSE_DIST Singularity Image CI
+name: DIST2NGBRS Singularity Image CI
 
 on:
   push:

@@ -1,13 +1,13 @@
-name: PARSE_DIST Docker Image CI
+name: DIST2NGBRS Docker Image CI
 
 on:
   push:
     paths:
-      - modules/local/parse_dist/**
+      - modules/local/dist2ngbrs/**
   workflow_dispatch:
 
 env:
-  img_name: ${{ secrets.DOCKERHUB_USERNAME }}/samntrek-parse-dist
+  img_name: ${{ secrets.DOCKERHUB_USERNAME }}/samntrek-dist2ngbrs
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -37,5 +37,5 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          context: ./modules/local/parse_dist/
+          context: ./modules/local/dist2ngbrs/
           tags: ${{ env.img_name }}:latest
