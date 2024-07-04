@@ -1,0 +1,41 @@
+name: PPSKETCHLIB Docker Image CI
+
+on:
+  push:
+    paths:
+      - modules/local/ppsketchlib/**
+  workflow_dispatch:
+
+env:
+  img_name: ${{ secrets.DOCKERHUB_USERNAME }}/ppsketchlib
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          context: ./modules/local/ppsketchlib/
+          tags: ${{ env.img_name }}:2.1.1
