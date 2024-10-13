@@ -22,8 +22,7 @@ This section is dedicated to those who cannot be bothered with the fine details 
 Once all the prerequisites have been installed, run the following command in the terminal to verify all dependencies have been set up correctly:
 
 ```bash
-nextflow run jimmyliu1326/SamnTrek \
-   -r [version] --help
+nextflow run jimmyliu1326/SamnTrek -r [version] --help
 ```
 > [!NOTE]
 > Replace `[version]` with the latest release tag, which can be found [here](https://github.com/jimmyliu1326/SamnTrek/releases)
