@@ -1,16 +1,20 @@
-process PARSE_DIST {
+process PPSKETCHLIB_DIST {
     tag "$meta.id"
     label 'process_low'
+
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'oras://ghcr.io/jimmyliu1326/samntrek-parse-dist:latest':
-        'jimmyliu1326/samntrek-parse-dist:latest' }"
+        'oras://ghcr.io/jimmyliu1326/ppsketchlib:2.1.1' :
+        'jimmyliu1326/ppsketchlib:2.1.1' }"
 
     input:
-    tuple val(meta), path(npy), path(pkl)
+    tuple val(meta), path(sketch), val(cluster)
+    path(db)
 
     output:
-    tuple val(meta), path("*.tsv")             , emit: distance
-    path "versions.yml"                        , emit: versions
+    tuple val(meta), path("*.npy"), emit: npy
+    tuple val(meta), path("*.pkl"), emit: pkl
+    // TODO nf-core: List additional required output channels/values here
+    path "versions.yml"           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -19,14 +23,15 @@ process PARSE_DIST {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    npy2df.py \
-        --npy ${npy} \
-        --pkl ${pkl} \
-        --out ${prefix}.tsv
+    sketchlib query dist \
+        ${sketch} \
+        ${db}/sketches/Clust-${cluster} \
+        --cpus ${task.cpus} \
+        -o ${prefix}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        Python: \$(python --version |& sed '1!d ; s/Python //')
+        ppsketchlib: \$(sketchlib --version |& sed '1!d ; s/pp-sketchlib v//')
     END_VERSIONS
     """
 
@@ -39,12 +44,10 @@ process PARSE_DIST {
     //               Complex example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bedtools/split/main.nf#L38-L54
     """
     touch ${prefix}.tsv
-    mkdir -p logs
-    touch logs/samnsorter.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        samnsorter: \$(SamnSorter.R --version |& sed '1!d ; s/samnsorter v//')
+        ppsketchlib: \$(sketchlib --version |& sed '1!d ; s/pp-sketchlib //')
     END_VERSIONS
     """
 }

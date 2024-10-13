@@ -8,9 +8,10 @@
 ========================================================================================
 */
 
-include { paramsHelp         } from 'plugin/nf-validation'
-include { paramsSummaryLog   } from 'plugin/nf-validation'
-include { validateParameters } from 'plugin/nf-validation'
+include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
+// include { paramsHelp         } from 'plugin/nf-validation'
+// include { paramsSummaryLog   } from 'plugin/nf-validation'
+// include { validateParameters } from 'plugin/nf-validation'
 
 /*
 ========================================================================================
@@ -40,14 +41,15 @@ workflow UTILS_NFVALIDATION_PLUGIN {
     //
     // Print help message if needed
     //
-    if (print_help) {
-        log.info pre_help_text + paramsHelp(workflow_command, parameters_schema: schema_filename) + post_help_text
-        System.exit(0)
+    if (params.help) {
+    log.info paramsHelp("nextflow run my_pipeline --input input_file.csv")
+    exit 0
     }
 
     //
     // Print parameter summary to stdout
     //
+    // Print summary of supplied parameters
     log.info pre_help_text + paramsSummaryLog(workflow, parameters_schema: schema_filename) + post_help_text
 
     //

@@ -10,5 +10,5 @@ dependencies:
   - r-dbscan=1.1_12=r42ha503ecb_0
   - r-cluster=2.1.6=r42h61816a4_0
   - r-furrr=0.3.1=r42hc72bb7e_2
-  - r-ggpubr=0.6.0=r43hc72bb7e_1
+  - r-ggpubr=0.6.0=r42hc72bb7e_1
   

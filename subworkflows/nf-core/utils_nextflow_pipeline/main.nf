@@ -82,7 +82,7 @@ def dumpParametersToJSON(outdir) {
     def jsonStr    = JsonOutput.toJson(params)
     temp_pf.text   = JsonOutput.prettyPrint(jsonStr)
 
-    FilesEx.copyTo(temp_pf.toPath(), "${outdir}/pipeline_info/params_${timestamp}.json")
+    FilesEx.copyTo(temp_pf.toPath(), "${outdir}/PIPELINE_INFO/params_${timestamp}.json")
     temp_pf.delete()
 }
 

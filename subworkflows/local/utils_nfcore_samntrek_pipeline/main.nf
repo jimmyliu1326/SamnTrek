@@ -73,26 +73,46 @@ workflow PIPELINE_INITIALISATION {
         nextflow_cli_args
     )
 
+    // validate cli args
+    //// --wf param
+    wf = params.wf.tokenize(',')
+    valid_wf = ['download_db', 'sort', 'search', 'fetch_hits', 'contextualize', 'all']
+    if ( !wf.any { valid_wf.contains(it) } ) {
+        log.error "No valid workflow (--wf) specified. Please choose from: ${valid_wf}"
+        exit 1
+    }
+    valid_tree_method = ['mash', 'cgmlst']
+    if ( ![params.tree_method].any { valid_tree_method.contains(it) } ) {
+        log.error "Invalid tree method (--tree_method) specified. Please choose from: ${valid_tree_method}"
+        exit 1
+    }
+    //// --results_dir param
+    if ( !wf.any { ['sort'].contains(it) } & wf.contains('search') & !params.results_dir ) {
+        log.error "You must specify a results directory (--results_dir) in order to resume from the 'search' step"
+        exit 1
+    }
+    if ( !wf.any { ['search'].contains(it) } & wf.contains('fetch_hits') & !params.results_dir ) {
+        log.error "You must specify a results directory (--results_dir) in order to resume from the 'search' step"
+        exit 1
+    }
+    if ( !wf.any { ['fetch_hits'].contains(it) } & wf.contains('contextualize') & !params.results_dir ) {
+        log.error "You must specify a results directory (--results_dir) in order to resume from the 'search' step"
+        exit 1
+    }
+
     //
     // Create channel from input file provided through params.input
     //
     Channel
-        .fromSamplesheet("input")
-        .map {
-            meta, fastq_1, fastq_2 ->
-                if (!fastq_2) {
-                    return [ meta.id, meta + [ single_end:true ], [ fastq_1 ] ]
-                } else {
-                    return [ meta.id, meta + [ single_end:false ], [ fastq_1, fastq_2 ] ]
-                }
-        }
-        .groupTuple()
+        .fromSamplesheet(
+            "input",
+            schema: "assets/schema_input.json"
+        )
+        // .map { meta, genome ->
+        //     return [ meta.id, [ genome ] ]
+        // }
         .map {
             validateInputSamplesheet(it)
-        }
-        .map {
-            meta, fastqs ->
-                return [ meta, fastqs.flatten() ]
         }
         .set { ch_samplesheet }
 
@@ -152,15 +172,8 @@ workflow PIPELINE_COMPLETION {
 // Validate channels from input samplesheet
 //
 def validateInputSamplesheet(input) {
-    def (metas, fastqs) = input[1..2]
-
-    // Check that multiple runs of the same sample are of the same datatype i.e. single-end / paired-end
-    def endedness_ok = metas.collect{ it.single_end }.unique().size == 1
-    if (!endedness_ok) {
-        error("Please check input samplesheet -> Multiple runs of a sample must be of the same datatype i.e. single-end or paired-end: ${metas[0].id}")
-    }
-
-    return [ metas[0], fastqs ]
+    def (meta, fasta) = input
+    return [ [id: meta.id], fasta ]
 }
 
 //

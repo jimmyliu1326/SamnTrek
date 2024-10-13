@@ -1,16 +1,16 @@
-process PARSE_DIST {
+process DB_FETCH {
     tag "$meta.id"
     label 'process_low'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'oras://ghcr.io/jimmyliu1326/samntrek-parse-dist:latest':
-        'jimmyliu1326/samntrek-parse-dist:latest' }"
+        'oras://community.wave.seqera.io/library/curl_tar:60e3944a1138432b':
+        'community.wave.seqera.io/library/curl_tar:7cc34f46f9969d3a' }"
 
     input:
-    tuple val(meta), path(npy), path(pkl)
+    tuple val(meta), path(version)
 
     output:
-    tuple val(meta), path("*.tsv")             , emit: distance
-    path "versions.yml"                        , emit: versions
+    tuple val(meta), path("*.tar.gz")                   , emit: db
+    path "versions.yml"                                 , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -19,14 +19,12 @@ process PARSE_DIST {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    npy2df.py \
-        --npy ${npy} \
-        --pkl ${pkl} \
-        --out ${prefix}.tsv
+    version=\$(cat ${version})
+    curl ${args} > ${prefix}.tar.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        Python: \$(python --version |& sed '1!d ; s/Python //')
+        curl: \$(curl --version | head -n1 | sed 's/curl //g' | sed 's/ .*//g')
     END_VERSIONS
     """
 
@@ -38,13 +36,11 @@ process PARSE_DIST {
     //               Simple example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bcftools/annotate/main.nf#L47-L63
     //               Complex example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bedtools/split/main.nf#L38-L54
     """
-    touch ${prefix}.tsv
-    mkdir -p logs
-    touch logs/samnsorter.log
+    mkdir -p ${prefix}/v1/
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        samnsorter: \$(SamnSorter.R --version |& sed '1!d ; s/samnsorter v//')
+        curl: \$(curl --version | head -n1 | sed 's/curl //g' | sed 's/ .*//g')
     END_VERSIONS
     """
 }

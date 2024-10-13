@@ -1,16 +1,19 @@
-process PARSE_DIST {
+process DIST2NGBRS {
     tag "$meta.id"
     label 'process_low'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'oras://ghcr.io/jimmyliu1326/samntrek-parse-dist:latest':
-        'jimmyliu1326/samntrek-parse-dist:latest' }"
+        'oras://ghcr.io/jimmyliu1326/samntrek-dist2ngbrs:latest':
+        'jimmyliu1326/samntrek-dist2ngbrs:latest' }"
 
     input:
-    tuple val(meta), path(npy), path(pkl)
+    tuple val(meta), path(tsv)
 
     output:
-    tuple val(meta), path("*.tsv")             , emit: distance
-    path "versions.yml"                        , emit: versions
+    tuple val(meta), path("*.txt")                               , emit: hits
+    tuple val(meta), path("core_accessory_plot.png")             , emit: core_accessory_png, optional: true
+    tuple val(meta), path("hdbscan_cluster_score.png")           , emit: cluster_score_png, optional: true
+    tuple val(meta), path("*.tsv")                               , emit: stats
+    path "versions.yml"                                          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -19,14 +22,15 @@ process PARSE_DIST {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    npy2df.py \
-        --npy ${npy} \
-        --pkl ${pkl} \
-        --out ${prefix}.tsv
+    dist2ngbrs.R \
+        -o . \
+        -t ${task.cpus} \
+        ${args} \
+        ${tsv}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        Python: \$(python --version |& sed '1!d ; s/Python //')
+        R: \$(R --version | head -n1 | sed 's/R version //g' | sed 's/ .*//g')
     END_VERSIONS
     """
 

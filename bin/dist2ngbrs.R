@@ -103,18 +103,30 @@ hdbscan_search <- function(
       theme_bw(15) +
       labs(x = "minPts",
            y = "Number of clusters")
-    p3 <- ggarrange(p, p2, ncol = 2)
+    p3 <- ggarrange(p, p2, ncol = 1)
     if (!is.null(outfile)) { ggsave(outfile, p3) } # save plot
     # fit hdbscan using optimal minPts
-    opt_minpts <- tryCatch(
-      clust_stats_df %>% filter(clusters_n > 2) %>% filter(sil == max(sil)) %>% pull(minpts) %>% min(), 
-      error = function(e) {
-        clust_stats_df$minpts[which.max(clust_stats_df$sil)]
+    min_clusters_n <- 5
+    print(clust_stats_df)
+    if ( nrow(mat) >= 10000 ) {
+      if ( any(clust_stats_df$clusters_n >= min_clusters_n) ) {
+      opt_minpts <- clust_stats_df %>% filter(clusters_n >= min_clusters_n) %>% filter(sil == max(sil, na.rm = T)) %>% pull(minpts) %>% min()
+      } else {
+        opt_minpts <- clust_stats_df$minpts[which.max(clust_stats_df$sil)]
       }
-    )
+    } else {
+      opt_minpts <- clust_stats_df$minpts[which.max(clust_stats_df$sil)]
+    }
+    
     cat("Optimal minPts: ", opt_minpts, "\n")
-    cat("Fitting HDBSCAN using optimal minPts...\n")
-    dbscan.fit <- hdbscan(mat[,c('core', 'accessory')], minPts = opt_minpts)
+    if (length(opt_minpts) == 0) {
+      cat("No valid optimal minPts found...\n")
+      opt_minpts <- NA
+      dbscan.fit <- NA
+    } else {
+      cat("Fitting HDBSCAN using optimal minPts...\n")
+      dbscan.fit <- hdbscan(mat[,c('core', 'accessory')], minPts = opt_minpts)
+    }
     # return list obj
     return(
       list(
@@ -122,6 +134,7 @@ hdbscan_search <- function(
         'opt_minpts' = opt_minpts
       )
     )
+    
 }
 
 distance_search <- function(
@@ -133,10 +146,7 @@ distance_search <- function(
   cat("Searching by distance...\n")
   mat.filt <- mat %>% 
     filter(core <= max_core, 
-           accessory <= -1*max_accessory/max_core+max_accessory) %>%
-    mutate(dist = sqrt(core^2+accessory^2)) %>%
-    arrange(dist) %>%
-    slice(1:if_else(nrow(.) >= top_hits, top_hits, nrow(.)))
+           accessory <= max_accessory)
   return(mat.filt)
 }
 
@@ -147,7 +157,8 @@ main_search <- function(
     minPts = seq(5, 15, 1), # range of minPts to search
     outdir = ".", # output directory
     subsample = 10000, # subsample size
-    top_hits = 2000 # maximum number of top hits to return
+    top_hits = 2000, # maximum number of top hits to return
+    id = NULL # sample ID
 ) {
     # initialize output obj
     res <- list(
@@ -165,12 +176,33 @@ main_search <- function(
     )
     # perform prefiltering
     if (length(prefilter_dist) == 2) {
-        res[['mat']] <- filter(mat, core <= prefilter_dist[1], accessory <= prefilter_dist[2])
-        cat("Number of subject IDs after prefiltering:", nrow(res[['mat']]), "\n")
-        # stop if no candidates remain
+      res[['mat']] <- filter(mat, core <= prefilter_dist[1], accessory <= prefilter_dist[2])
+      cat("Number of subject IDs after prefiltering:", nrow(res[['mat']]), "\n")
+      # stop if no candidates remain
       if (nrow(res[['mat']]) == 0) {
           writeLines(character(0), con = file.path(outdir, "SamnTrek_hits.txt"))
-          quit("No rows found after prefiltering. Exiting...\n")
+          data.frame(
+            'id' = id,
+            'subjects_n' = nrow(mat),
+            'top_hits_n' = 0,
+            'total_hits_n' = 0,
+            "clusters_n" = 0
+          ) %>%
+            write.table(file = file.path(outdir, "SamnTrek_search_stats.tsv"),
+                        sep = "\t", row.names = F, col.names = T, quote = F)
+          cat("No rows found after prefiltering. Exiting...\n")
+          quit(save = 'no')
+      }
+    }
+    # disable clustering if fewer than min_n subject IDs
+    min_n <- 150
+    if ( nrow(res[['mat']]) < min_n ) {
+      cat("Detected less than", min_n, "subject IDs after prefiltering, insufficient data for reliable unsupervised clustering...\n")
+      if (max_dist == 'auto') {
+        max_dist <- "0.025,0.0005"
+        cat("Setting core distance threshold to: ", unlist(str_split(max_dist, ','))[1], "\n")
+        cat("Setting accessory distance threshold to: ", unlist(str_split(max_dist, ','))[2], "\n")
+        cat("To override this, please specify a value using --distance\n")
       }
     }
     # subsample size
@@ -182,13 +214,27 @@ main_search <- function(
     # execute search
     if (max_dist != 'auto') {
         # verify distance format
-        if (length(unlist(str_split(args$distance, ','))) != 2) {
+        if (length(unlist(str_split(max_dist, ','))) != 2) {
           stop("Invalid distance format. Please specify core and accessory distances separated by a comma e.g. 0.05,0.01\n")
-          core_dist <- as.numeric(unlist(str_split(args$distance, ','))[1])
-          accessory_dist <- as.numeric(unlist(str_split(args$distance, ','))[2])
         }
+        core_dist <- as.numeric(unlist(str_split(max_dist, ','))[1])
+        accessory_dist <- as.numeric(unlist(str_split(max_dist, ','))[2])
         m <- distance_search(res[['mat']], core_dist, accessory_dist, top_hits)
-        res[['ngbrs_ids']] <- as.character(m$id)
+        if (nrow(m) == 0) {
+          res[['total_hits']]  <- NULL
+        } else {
+          res[['total_hits']]  <- nrow(m)
+        } 
+        # keep top hits
+        m <- m %>%
+          mutate(dist = sqrt(core^2+accessory^2)) %>%
+          arrange(dist) %>%
+          slice(1:if_else(nrow(.) >= top_hits, top_hits, nrow(.)))
+        if (nrow(m) == 0) {
+          res[['ngbrs_ids']]  <- NULL
+        } else {
+          res[['ngbrs_ids']]  <- as.character(m$id)
+        }
         res[['core']] <- as.numeric(core_dist)
         res[['accessory']] <- as.numeric(accessory_dist)
     } else {
@@ -200,14 +246,26 @@ main_search <- function(
         } else {
             res[['hdbscan_mat']] <- res[['mat']]
         }
+        # check validity of minPts range
+        if ( max(minPts) > nrow(res[['hdbscan_mat']]) ) {
+          minPts <- minPts %>% subset(. <= nrow(res[['hdbscan_mat']]))
+        }
+        # optimize hdbscan hyperparameter
         dbscan.fit <- hdbscan_search(
           res[['hdbscan_mat']],
           minPts,
           outfile = file.path(outdir, 'hdbscan_cluster_score.png')
         )
         res[['opt_minpts']] <- dbscan.fit[['opt_minpts']]
-        res[['cluster']] <- if_else(dbscan.fit[['fit']]$cluster == 0, NA, dbscan.fit[['fit']]$cluster)
+        # check validity of the most optimal hdbscan fit
+        cat("Validity of fit:", !all(is.na(dbscan.fit[['fit']])), "\n")
+        if (!all(is.na(dbscan.fit[['fit']]))) {
+          res[['cluster']] <- dbscan.fit[['fit']]$cluster
+        } else {
+          res [['cluster']] <- NA
+        }        
         # find cluster with minimum distance to origin
+        cat("Calculating cluster centroids...\n")
         res[['centroids']] <- res[['hdbscan_mat']] %>% 
           cbind(cluster = res[['cluster']]) %>%
           filter(!is.na(cluster)) %>% 
@@ -220,6 +278,7 @@ main_search <- function(
           res[['accessory']] <- 0.025
           res[['core']] <- 0.0005
           res[['clusters_n']] <- 0
+          res[['centroids']] <- NULL
           cat("Setting core distance threshold to: ", res[['core']], "\n")
           cat("Setting accessory distance threshold to: ", res[['accessory']], "\n")
           cat("To override this, please specify a value using --distance\n")
@@ -330,19 +389,18 @@ if (args$minPts == "auto" & args$distance == "auto") {
   min_minpts <- 15
   max_minpts <- 155
   step_minpts <- 10
-  if ( nrow(mat) >= max_minpts) {
-    minpts_range <- c(seq(min_minpts, max_minpts, step_minpts))
+  # disable clustering if fewer than min_n subject IDs
+  min_n <- 150
+  if ( nrow(mat) < min_n ) {
+    cat("Detected less than", min_n, "subject IDs, insufficient data for reliable unsupervised clustering...\n")
+    args$distance <- "0.025,0.0005"
+    cat("Setting core distance threshold to: ", as.numeric(unlist(str_split(args$distance, ','))[1]), "\n")
+    cat("Setting accessory distance threshold to: ", as.numeric(unlist(str_split(args$distance, ','))[2]), "\n")
+    cat("To override this, please specify a value using --distance\n")
+  } else if ( nrow(mat) >= max_minpts) {
+    minpts_range <- seq(min_minpts, max_minpts, step_minpts)
   } else {
     minpts_range <- seq(min_minpts, nrow(mat), step_minpts)
-  }
-  # disable clustering if fewer than min_n subject IDs
-  min_n <- 100
-  if ( nrow(mat) < min_n ) {
-    cat("Detected less than", min_n, "subject IDs, insufficient data for reliable unsupervised clustering...")
-    args$distance <- c(0.025, 0.0005)
-    cat("Setting core distance threshold to: ", args$distance[1], "\n")
-    cat("Setting accessory distance threshold to: ", args$distance[2], "\n")
-    cat("To override this, please specify a value using --distance\n")
   }
 } else if (args$distance == "auto" & args$minPts != "auto") {
   max_minpts <- as.numeric(unlist(str_split(args$minPts, ','))[2])
@@ -369,7 +427,8 @@ search_res <- main_search(
   minPts = minpts_range, # range of minPts to search
   outdir = args$outdir, # output directory
   subsample = as.numeric(args$subsample), #  subsample size
-  top_hits = as.numeric(args$top_hits) # maximum number of top hits to return
+  top_hits = as.numeric(args$top_hits), # maximum number of top hits to return
+  id = sub("\\.[^\\.]*$", "", (basename(args$file)))
 )
 # plot analytical results
 cat("Plotting clustering results...\n")
@@ -384,19 +443,23 @@ plot_dist(
   centroids = search_res[['centroids']], # cluster centroids coordinates
   clusters = search_res[['cluster']], # cluster assignments
   outfile = file.path(args$outdir, 'core_accessory_plot.png'), # output file path
-  subsample = search_res[['subsample']] # subsample size
+  subsample = search_res[['subsample']], # subsample size
+  opt_minpts = search_res[['opt_minpts']] # optimal minPt
 )
 # write neighbour accessions
 cat("Writing out neighbour accessions...\n")
-writeLines(as.character(search_res[['ngbrs_ids']]),
-           con = file.path(args$outdir, "SamnTrek_hits.txt"))
+if (is.null(search_res[['ngbrs_ids']])) {
+  writeLines(character(0), con = file.path(args$outdir, "SamnTrek_hits.txt"))
+} else {
+  writeLines(as.character(search_res[['ngbrs_ids']]), con = file.path(args$outdir, "SamnTrek_hits.txt"))
+}
 cat("Writing out search stats...\n")
 data.frame(
   'id' = sub("\\.[^\\.]*$", "", (basename(args$file))),
   'subjects_n' = nrow(mat),
-  'top_hits_n' = length(search_res[['ngbrs_ids']]),
-  'total_hits_n' = search_res[['total_hits']],
-  "clusters_n" = search_res[['clusters_n']]
+  'top_hits_n' = ifelse(is.null(search_res[['ngbrs_ids']]), 0, length(search_res[['ngbrs_ids']]) ),
+  'total_hits_n' = ifelse(is.null(search_res[['total_hits']]), 0, search_res[['total_hits']]),
+  "clusters_n" = ifelse(is.null(search_res[['clusters_n']]), 0, search_res[['clusters_n']])
 ) %>%
   write.table(file = file.path(args$outdir, "SamnTrek_search_stats.tsv"),
               sep = "\t", row.names = F, col.names = T, quote = F)

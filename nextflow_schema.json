@@ -32,17 +32,159 @@
                     "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
                     "fa_icon": "fas fa-folder-open"
                 },
-                "email": {
+                "results_dir": {
                     "type": "string",
-                    "description": "Email address for completion summary.",
-                    "fa_icon": "fas fa-envelope",
-                    "help_text": "Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.",
-                    "pattern": "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
+                    "description": "Directory to where previous results were saved. Use this parameter to resume the pipeline from any step in the workflow in combination with the --wf option",
+                    "format": "directory-path"
+                }
+            }
+        },
+        "pipeline_entry_options": {
+            "title": "Pipeline entry options",
+            "type": "object",
+            "description": "Options to control the point of pipeline entry",
+            "default": "",
+            "properties": {
+                "wf": {
+                    "type": "string",
+                    "default": "all",
+                    "description": "Specify which subworkflow or combination of subworkflows to run. Options: [all, sort, search, fetch_hits, contextualize]. Multiple options can be specified by delimiting the values with a comma"
+                }
+            },
+            "required": [
+                "wf"
+            ]
+        },
+        "similarity_search_options": {
+            "title": "Similarity search options",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "prefilter_dist": {
+                    "type": "string",
+                    "default": "0.001,0.15",
+                    "description": "Preselect database sequences by setting a maximum allowable distance prior to clustering. Must specify a cutoff for core and accessory distance delimited by a comma. Format: [core_threshold,accessory_threshold]"
                 },
+                "distance": {
+                    "type": "string",
+                    "default": "auto",
+                    "description": "Select the most similar hits based on distance cutoff (core and accessory distance). Specify 'auto' to automatically select the most optimal cutoff using unsupervised clustering. Format: [core_threshold,accessory_threshold]."
+                },
+                "cluster_opt": {
+                    "type": "string",
+                    "default": "auto",
+                    "description": "Control the range of minPts parameter to explore during HDBSCAN optimization. Choose 'auto' to automatically select the range. Format: [min,max,step]"
+                },
+                "cluster_subsample": {
+                    "type": "integer",
+                    "default": 10000,
+                    "description": "Subsample the database sequences during unsupervised clustering. Choosing a value above 10,000 can result in significant reduction in speed"
+                },
+                "top_hits": {
+                    "type": "integer",
+                    "default": 5000,
+                    "description": "Only return the top N most similar hits"
+                }
+            }
+        },
+        "sequence_contextualization_options": {
+            "title": "Sequence contextualization options",
+            "type": "object",
+            "description": "Parameters to control how sequences are contextualized",
+            "default": "",
+            "properties": {
+                "tree_method": {
+                    "type": "string",
+                    "default": "mash",
+                    "description": "Method used for computing phylogenetic tree. Options: [mash,cgmlst]",
+                    "enum": [
+                        "mash",
+                        "cgmlst"
+                    ]
+                }
+            }
+        },
+        "database_management_options": {
+            "title": "Database management options",
+            "type": "object",
+            "description": "Parameters for managing SamnTrek database",
+            "default": "",
+            "properties": {
+                "db": {
+                    "type": "string",
+                    "description": "Local path to SamnTrek database",
+                    "format": "directory-path"
+                },
+                "download_path": {
+                    "type": "string",
+                    "default": "output_directory/SamnTrek_db",
+                    "description": "Path to save the downloaded SamnTrek database"
+                }
+            }
+        },
+        "sequence_download_options": {
+            "title": "Sequence download options",
+            "type": "object",
+            "description": "Parameters to control how sequences are downlaoded from NCBI",
+            "default": "",
+            "properties": {
+                "dl_chunk_size": {
+                    "type": "integer",
+                    "default": 5000,
+                    "description": "Number of NCBI sequences to download per batch. It is not recommended to choose a value larger than 5,000"
+                }
+            }
+        },
+        "multiqc_options": {
+            "title": "MultiQC Options",
+            "type": "object",
+            "description": "Parameters used to configure MultiQC report format.",
+            "default": "",
+            "properties": {
                 "multiqc_title": {
                     "type": "string",
                     "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
-                    "fa_icon": "fas fa-file-signature"
+                    "fa_icon": "fas fa-file-signature",
+                    "hidden": true
+                },
+                "multiqc_methods_description": {
+                    "type": "string",
+                    "description": "Custom MultiQC yaml file containing HTML including a methods description.",
+                    "fa_icon": "fas fa-cog",
+                    "hidden": true
+                }
+            }
+        },
+        "max_job_request_options": {
+            "title": "Max job request options",
+            "type": "object",
+            "fa_icon": "fab fa-acquisitions-incorporated",
+            "description": "Set the top limit for requested resources for any single job.",
+            "help_text": "If you are running on a smaller system, a pipeline step requesting more resources than are available may cause the Nextflow to stop the run with an error. These options allow you to cap the maximum resources requested by any single job so that the pipeline will run on your system.\n\nNote that you can not _increase_ the resources requested by any job using these options. For that you will need your own configuration file. See [the nf-core website](https://nf-co.re/usage/configuration) for details.",
+            "properties": {
+                "max_cpus": {
+                    "type": "integer",
+                    "description": "Maximum number of CPUs that can be requested for any single job.",
+                    "default": 16,
+                    "fa_icon": "fas fa-microchip",
+                    "help_text": "Use to set an upper-limit for the CPU requirement for each process. Should be an integer e.g. `--max_cpus 1`"
+                },
+                "max_memory": {
+                    "type": "string",
+                    "description": "Maximum amount of memory that can be requested for any single job.",
+                    "default": "128.GB",
+                    "fa_icon": "fas fa-memory",
+                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
+                    "help_text": "Use to set an upper-limit for the memory requirement for each process. Should be a string in the format integer-unit e.g. `--max_memory '8.GB'`"
+                },
+                "max_time": {
+                    "type": "string",
+                    "description": "Maximum amount of time that can be requested for any single job.",
+                    "default": "240.h",
+                    "fa_icon": "far fa-clock",
+                    "pattern": "^(\\d+\\.?\\s*(s|m|h|d|day)\\s*)+$",
+                    "help_text": "Use to set an upper-limit for the time requirement for each process. Should be a string in the format integer-unit e.g. `--max_time '2.h'`"
                 }
             }
         },
@@ -94,41 +236,6 @@
                 }
             }
         },
-        "max_job_request_options": {
-            "title": "Max job request options",
-            "type": "object",
-            "fa_icon": "fab fa-acquisitions-incorporated",
-            "description": "Set the top limit for requested resources for any single job.",
-            "help_text": "If you are running on a smaller system, a pipeline step requesting more resources than are available may cause the Nextflow to stop the run with an error. These options allow you to cap the maximum resources requested by any single job so that the pipeline will run on your system.\n\nNote that you can not _increase_ the resources requested by any job using these options. For that you will need your own configuration file. See [the nf-core website](https://nf-co.re/usage/configuration) for details.",
-            "properties": {
-                "max_cpus": {
-                    "type": "integer",
-                    "description": "Maximum number of CPUs that can be requested for any single job.",
-                    "default": 16,
-                    "fa_icon": "fas fa-microchip",
-                    "hidden": true,
-                    "help_text": "Use to set an upper-limit for the CPU requirement for each process. Should be an integer e.g. `--max_cpus 1`"
-                },
-                "max_memory": {
-                    "type": "string",
-                    "description": "Maximum amount of memory that can be requested for any single job.",
-                    "default": "128.GB",
-                    "fa_icon": "fas fa-memory",
-                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
-                    "hidden": true,
-                    "help_text": "Use to set an upper-limit for the memory requirement for each process. Should be a string in the format integer-unit e.g. `--max_memory '8.GB'`"
-                },
-                "max_time": {
-                    "type": "string",
-                    "description": "Maximum amount of time that can be requested for any single job.",
-                    "default": "240.h",
-                    "fa_icon": "far fa-clock",
-                    "pattern": "^(\\d+\\.?\\s*(s|m|h|d|day)\\s*)+$",
-                    "hidden": true,
-                    "help_text": "Use to set an upper-limit for the time requirement for each process. Should be a string in the format integer-unit e.g. `--max_time '2.h'`"
-                }
-            }
-        },
         "generic_options": {
             "title": "Generic options",
             "type": "object",
@@ -139,14 +246,20 @@
                 "help": {
                     "type": "boolean",
                     "description": "Display help text.",
-                    "fa_icon": "fas fa-question-circle",
+                    "fa_icon": "fas fa-question-circle"
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Email address for completion summary.",
+                    "fa_icon": "fas fa-envelope",
+                    "help_text": "Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.",
+                    "pattern": "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$",
                     "hidden": true
                 },
                 "version": {
                     "type": "boolean",
                     "description": "Display version and exit.",
-                    "fa_icon": "fas fa-question-circle",
-                    "hidden": true
+                    "fa_icon": "fas fa-question-circle"
                 },
                 "publish_dir_mode": {
                     "type": "string",
@@ -212,11 +325,6 @@
                     "fa_icon": "fas fa-image",
                     "hidden": true
                 },
-                "multiqc_methods_description": {
-                    "type": "string",
-                    "description": "Custom MultiQC yaml file containing HTML including a methods description.",
-                    "fa_icon": "fas fa-cog"
-                },
                 "validate_params": {
                     "type": "boolean",
                     "description": "Boolean whether to validate parameters against the schema at runtime",
@@ -236,7 +344,8 @@
                     "fa_icon": "far fa-check-circle",
                     "description": "Validation of parameters fails when an unrecognised parameter is found.",
                     "hidden": true,
-                    "help_text": "By default, when an unrecognised parameter is found, it returns a warinig."
+                    "help_text": "By default, when an unrecognised parameter is found, it returns a warinig.",
+                    "default": true
                 },
                 "validationLenientMode": {
                     "type": "boolean",
@@ -260,10 +369,28 @@
             "$ref": "#/definitions/input_output_options"
         },
         {
-            "$ref": "#/definitions/institutional_config_options"
+            "$ref": "#/definitions/pipeline_entry_options"
+        },
+        {
+            "$ref": "#/definitions/similarity_search_options"
+        },
+        {
+            "$ref": "#/definitions/sequence_contextualization_options"
+        },
+        {
+            "$ref": "#/definitions/database_management_options"
+        },
+        {
+            "$ref": "#/definitions/sequence_download_options"
+        },
+        {
+            "$ref": "#/definitions/multiqc_options"
         },
         {
             "$ref": "#/definitions/max_job_request_options"
+        },
+        {
+            "$ref": "#/definitions/institutional_config_options"
         },
         {
             "$ref": "#/definitions/generic_options"
