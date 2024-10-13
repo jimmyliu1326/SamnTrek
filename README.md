@@ -25,8 +25,8 @@ Once all the prerequisites have been installed, run the following command in the
 nextflow run jimmyliu1326/SamnTrek \
    -r [version] --help
 ```
-
-> Note: Replace `[version]` with the latest release tag, which can be found [here](https://github.com/jimmyliu1326/SamnTrek/releases)
+> [!NOTE]
+> Replace `[version]` with the latest release tag, which can be found [here](https://github.com/jimmyliu1326/SamnTrek/releases)
 
 If successful, the complete pipeline help message will be printed to screen.
 
