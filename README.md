@@ -2,7 +2,7 @@
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 
-## SamnTrek
+## SamnTrek: Locally deployable search tool to explore local *Salmonella* epidemiology in a global context
 
 `SamnTrek` enables rapid integration of NCBI Pathogen Detection (NPD) data to place local *Salmonella* strains in a global context. Specifically, given any *Salmonella* genomes, `SamnTrek` identifies closely matching strains in NPD and constructs a phylogeny to contextualize the (local) query sequences with close matching (global) hits. The sequence similarity search algorithm has been optimized extensively, rendering it possible to search through >400,000 *Salmonella* genomes in minutes using minimal resources.
 
