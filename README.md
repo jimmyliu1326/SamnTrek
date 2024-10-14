@@ -89,7 +89,7 @@ For example, users can quickly produce close matching hits based on different se
 > [!NOTE]
 > While Nextflow does have a built-in resume function, it relies on the integrity of the temporary files stored in working directory. However, in some institutions, these working directories are routinely cleansed to free up storage space. Hence, we have implemented a custom method to reuse cached results directly from the output directory (`--outdir`)
 
-The results cahced in a previous output directory can be reused by supplying the path to the directory using the `--results_dir` option
+Results in a previous output directory can be reused by supplying the directory path using the `--results_dir` option
 
 ```bash
 # Initial run using top_hits = 100
