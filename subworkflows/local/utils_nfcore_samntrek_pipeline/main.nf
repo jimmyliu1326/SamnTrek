@@ -36,6 +36,7 @@ workflow PIPELINE_INITIALISATION {
     nextflow_cli_args //   array: List of positional nextflow CLI args
     outdir            //  string: The output directory where the results will be saved
     input             //  string: Path to input samplesheet
+    validate_input    // boolean: Validate input samplesheet against schema
 
     main:
 
@@ -56,7 +57,7 @@ workflow PIPELINE_INITIALISATION {
     //
     pre_help_text = nfCoreLogo(monochrome_logs)
     post_help_text = '\n' + workflowCitation() + '\n' + dashedLine(monochrome_logs)
-    def String workflow_command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --outdir <OUTDIR>"
+    def String workflow_command = "nextflow run ${workflow.manifest.name} -r <version> -profile <docker/singularity/.../institute> --input samplesheet.csv --outdir <OUTDIR> --db <DB_PATH>"
     UTILS_NFVALIDATION_PLUGIN (
         help,
         workflow_command,
@@ -103,7 +104,8 @@ workflow PIPELINE_INITIALISATION {
     //
     // Create channel from input file provided through params.input
     //
-    Channel
+    if (validate_input) {
+        Channel
         .fromSamplesheet(
             "input",
             schema: "assets/schema_input.json"
@@ -116,6 +118,12 @@ workflow PIPELINE_INITIALISATION {
         }
         .set { ch_samplesheet }
 
+    } else {
+
+        ch_samplesheet = [ [id:''] ]
+
+    }
+    
     emit:
     samplesheet = ch_samplesheet
     versions    = ch_versions

@@ -67,7 +67,8 @@ workflow {
         params.monochrome_logs,
         args,
         params.outdir,
-        params.input
+        params.input,
+        !params.wf.tokenize(',').any { ['download_db'].contains(it) }
     )
 
     //

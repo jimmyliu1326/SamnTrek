@@ -10,10 +10,6 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": [
-                "input",
-                "outdir"
-            ],
             "properties": {
                 "input": {
                     "type": "string",
@@ -30,7 +26,8 @@
                     "type": "string",
                     "format": "directory-path",
                     "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
-                    "fa_icon": "fas fa-folder-open"
+                    "fa_icon": "fas fa-folder-open",
+                    "default": "./results"
                 },
                 "results_dir": {
                     "type": "string",
@@ -118,7 +115,7 @@
                 },
                 "download_path": {
                     "type": "string",
-                    "default": "output_directory/SamnTrek_db",
+                    "default": "./results/SamnTrek_db",
                     "description": "Path to save the downloaded SamnTrek database"
                 }
             }
