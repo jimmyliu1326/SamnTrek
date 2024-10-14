@@ -67,13 +67,78 @@ nextflow run jimmyliu1326/SamnTrek \
    -profile <docker/singularity> \
    --wf all \
    --input samplesheet.csv \
-   --outdir /path/to/results
+   --outdir ./results
    --db /path/to/SamnTrek_db
 ```
 
 - `--input` specifies the path to input samplesheet
 - `--outdir` specifies the path to save the output results
 - `--db` specifies the path to the directory containing predownloaded database files
+
+## Modular Pipeline Design
+`SamnTrek` orchestrates the logic flow between four primary modules that collectively enable rapid integration of NPD *Salmonella* data. The modular design allows flexible points of entry. Users can resume from any steps in the pipeline without restarting the pipeline from scratch, which can expedite parameter tuning, testing and optimization.
+
+The key modules of `SamnTrek` include (listed in chronological order of operation):
+1. Sort (`sort`) - Placement of query in precomputed genomic clusters
+2. Search (`search`) - Search against NPD sequences belonging to the same cluster and identify the subset of closest matching hits using unsupervised clustering
+3. Fetch (`fetch_hits`) - Downloaded the full genomes of the close matches from NCBI
+4. Contextualize (`contextualize`) - Construct a phylogeny integrating both the query and close matching hits
+
+For example, users can quickly produce close matching hits based on different search parameters without reperforming the prior `sort` step.
+
+> [!NOTE]
+> While Nextflow does have a built-in resume function, it relies on the integrity of the temporary files stored in working directory. However, in some institutions, these working directories are routinely cleansed to free up storage space. Hence, we have implemented a custom method to reuse cached results directly from the output directory (`--outdir`)
+
+The results cahced in a previous output directory can be reused by supplying the path to the directory using the `--results_dir` option
+
+```bash
+# Initial run using top_hits = 100
+nextflow run jimmyliu1326/SamnTrek \
+   --wf all \
+   --input samplesheet.csv \
+   --outdir ./results \
+   --db ./SamnTrek_db \
+   --top_hits 100
+
+# Second run using top_hits = 200 and
+# reusing previous results
+nextflow run jimmyliu1326/SamnTrek \
+   --wf search,fetch_hits,contextualize \
+   --input samplesheet.csv \
+   --results_dir ./results \
+   --outdir ./new_results \
+   --db ./SamnTrek_db \
+   --top_hits 200
+```
+
+## Output files explained
+
+The following table describes the content stored in each subdirectory within the output directory (`--outdir`).
+
+| File | Description |
+| :-- | :-- |
+| SORT_RESULTS/ | Cluster placement results organized by sample ID. 
+| SORT_RESULTS/*.tsv | Describes the predicted cluster assignments made by three different methods (best hit search, KNN, phylogenetic placement) and the final assignment based on majority voting.
+| SEARCH_RESULTS/ | Sequence similarity search results organized by sample ID.
+| SEARCH_RESULTS/*.hits | Contains the NCBI accession IDs of the close matching strains. 
+| SEARCH_RESULTS/*.tsv | Contains the estimated core and accessory distance to all the database sequences belonging to the same cluster as the query.
+| SEARCH_RESULTS/search_stats.tsv | Summarizes the subject to (top) hits ratio | 
+| SEARCH_RESULTS/core_accessory_plot.png | Scatterplot displaying the distribution of relative distances of subject sequences to the query |
+| SEARCH_RESULTS/hdbscan_cluster_score.png | Results of HDBSCAN hyperparameter tuning evaluating cluster quality score (silhouette index) and total cluster count |
+| PD_GENOMES/ | Archives all close matching genomes downloaded from NCBI |
+| SUMMARY/ | Summary files compiling results across all samples supplied in the input sample sheet |
+| SUMMARY/sort_results.tsv | Aggregated cluster placement predictions |
+| SUMMARY/search_results.tsv | Aggregated sequence search results |
+| SUMMARY/SamnTrek_summary.tsv | Complete summary file aggregating cluster placement and sequence search results |
+| TREE/ | Data related to phylogenetic analysis | 
+| TREE/*.nwk | Raw phylogenetic tree file |
+| TREE/*.distance_matrix.tsv | Pairwise distance matrix used in phylogenetic construction |
+
+## Future plans
+
+- Real-time synchronization with NPD
+- Support core genome SNV phylogenetics
+- Streamline tree visualizations by facilitating the compilation of available metadata of the close matching hits from NPD
 
 ## Credits
 
@@ -95,6 +160,8 @@ If you would like to contribute to this pipeline, please see the [contributing g
 <!--An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file. -->
 
 This pipeline uses code and infrastructure developed and maintained by the [nf-core](https://nf-co.re) community, reused here under the [MIT license](https://github.com/nf-core/tools/blob/master/LICENSE).
+
+> **SamnTrek manuscript is currently in progress.** It will be updated here when available.
 
 > **The nf-core framework for community-curated bioinformatics pipelines.**
 >
