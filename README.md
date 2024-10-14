@@ -111,7 +111,7 @@ nextflow run jimmyliu1326/SamnTrek \
    --top_hits 200
 ```
 
-## Output files explained
+## Output files legend
 
 The following table describes the content stored in each subdirectory within the output directory (`--outdir`).
 
