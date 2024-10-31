@@ -3,7 +3,7 @@ process SAMNSORTER {
     label 'process_low'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'oras://ghcr.io/jimmyliu1326/samnsorter:v0.4.0':
-        'jimmyliu1326/samnsorter:v0.4.0' }"
+        'docker.io/jimmyliu1326/samnsorter:v0.4.0' }"
 
     input:
     tuple val(meta), path(fasta)
@@ -21,12 +21,16 @@ process SAMNSORTER {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def basename = fasta.getBaseName()
     """
     SamnSorter.R \\
         ${args} \\
         -t ${task.cpus} \\
         --outdir . \\
         ${fasta}
+
+    sed -i 's/${basename}/${meta.id}/g' samnsorter_res.tsv
+    sed -i 's/${basename}/${meta.id}/g' dist_matrix.tsv
 
     # parse final cluster prediction
     CLUSTER=\$(tail -n +2 samnsorter_res.tsv | cut -f4)

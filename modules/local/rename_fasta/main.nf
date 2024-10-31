@@ -1,17 +1,13 @@
-process PPSKETCHLIB_SKETCH {
+process RENAME_FASTA {
     tag "$meta.id"
-    label 'process_low'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'oras://ghcr.io/jimmyliu1326/ppsketchlib:2.1.1' :
-        'docker.io/jimmyliu1326/ppsketchlib:2.1.1' }"
+    label 'process_single'
 
     input:
-    tuple val(meta), path(fasta)
+    tuple val(meta), path(fasta, stageAs: "input.fasta")
 
     output:
-    tuple val(meta), path("*.h5") , emit: sketch
-    path "versions.yml"           , emit: versions
+    tuple val(meta), path("*.fasta")           , emit: fasta
+    path "versions.yml"                        , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -20,14 +16,11 @@ process PPSKETCHLIB_SKETCH {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    sketchlib sketch \
-        ${fasta} \
-        --cpus ${task.cpus} \
-        -o ./${prefix}
+    ln -Ls input.fasta ${meta.id}.fasta
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        ppsketchlib: \$(sketchlib --version |& sed '1!d ; s/pp-sketchlib v//')
+        mv: \$(mv --version | head -n1 | sed 's/.* //g')
     END_VERSIONS
     """
 
@@ -39,11 +32,11 @@ process PPSKETCHLIB_SKETCH {
     //               Simple example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bcftools/annotate/main.nf#L47-L63
     //               Complex example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bedtools/split/main.nf#L38-L54
     """
-    touch ${prefix}.tsv
+    touch ${meta.id}.fasta
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        ppsketchlib: \$(sketchlib --version |& sed '1!d ; s/pp-sketchlib //')
+        mv: \$(mv --version | head -n1 | sed 's/.* //g')
     END_VERSIONS
     """
 }

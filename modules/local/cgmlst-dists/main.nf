@@ -3,10 +3,10 @@ process CGMLST_DISTS {
     label 'process_low'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'oras://ghcr.io/jimmyliu1326/samnsorter:0.1.0':
-        'jimmyliu1326/samnsorter:0.1.0' }"
+        'docker.io/jimmyliu1326/samnsorter:0.1.0' }"
 
     input:
-    tuple val(meta), path(alleles)                        
+    tuple val(meta), path(alleles)
 
     output:
     path "*.tsv"                       , emit: matrix
@@ -24,7 +24,7 @@ process CGMLST_DISTS {
         ${alleles} \
         ${args} \
         > ${prefix}.tsv
-    
+
     # convert distance matrix to phylip format
     N=\$(tail -n +2 ${prefix}.tsv | wc -l)
     cat <(echo \$N) <(tail -n +2 ${prefix}.tsv) > ${prefix}.phylip

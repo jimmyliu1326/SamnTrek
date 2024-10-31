@@ -3,10 +3,10 @@ process CHEWBBACA_ALLELECALL {
     label 'process_low'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'oras://ghcr.io/jimmyliu1326/samnsorter:0.1.0':
-        'jimmyliu1326/samnsorter:0.1.0' }"
+        'docker.io/jimmyliu1326/samnsorter:0.1.0' }"
 
     input:
-    tuple val(meta), path(fasta)                        
+    tuple val(meta), path(fasta)
 
     output:
     tuple val(meta), path("**/results_alleles_hashed.tsv") , emit: alleles_hashed

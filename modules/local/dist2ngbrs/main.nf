@@ -3,7 +3,7 @@ process DIST2NGBRS {
     label 'process_low'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'oras://ghcr.io/jimmyliu1326/samntrek-dist2ngbrs:latest':
-        'jimmyliu1326/samntrek-dist2ngbrs:latest' }"
+        'docker.io/jimmyliu1326/samntrek-dist2ngbrs:latest' }"
 
     input:
     tuple val(meta), path(tsv)

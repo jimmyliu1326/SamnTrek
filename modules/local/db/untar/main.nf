@@ -1,9 +1,9 @@
 process DB_UNTAR {
     tag "$meta.id"
     label 'process_low'
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'oras://community.wave.seqera.io/library/curl_tar:60e3944a1138432b':
-        'community.wave.seqera.io/library/curl_tar:7cc34f46f9969d3a' }"
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'oras://community.wave.seqera.io/library/curl_tar:60e3944a1138432b':
+    //     'community.wave.seqera.io/library/curl_tar:7cc34f46f9969d3a' }"
 
     input:
     tuple val(meta), path(version), path(db_file), path(db_path)
@@ -21,7 +21,7 @@ process DB_UNTAR {
     """
     version=\$(cat ${version})
     mkdir -p ${prefix}
-    tar -xzvf ${db_file} -C ${prefix}
+    tar ${args} -xzvmf ${db_file} -C ${prefix}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -4,7 +4,7 @@ process PPSKETCHLIB_DIST {
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'oras://ghcr.io/jimmyliu1326/ppsketchlib:2.1.1' :
-        'jimmyliu1326/ppsketchlib:2.1.1' }"
+        'docker.io/jimmyliu1326/ppsketchlib:2.1.1' }"
 
     input:
     tuple val(meta), path(sketch), val(cluster)

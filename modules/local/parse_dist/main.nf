@@ -3,7 +3,7 @@ process PARSE_DIST {
     label 'process_low'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'oras://ghcr.io/jimmyliu1326/samntrek-parse-dist:latest':
-        'jimmyliu1326/samntrek-parse-dist:latest' }"
+        'docker.io/jimmyliu1326/samntrek-parse-dist:latest' }"
 
     input:
     tuple val(meta), path(npy), path(pkl)
