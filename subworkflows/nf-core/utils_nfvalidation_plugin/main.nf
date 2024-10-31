@@ -8,10 +8,10 @@
 ========================================================================================
 */
 
-include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
-// include { paramsHelp         } from 'plugin/nf-validation'
-// include { paramsSummaryLog   } from 'plugin/nf-validation'
-// include { validateParameters } from 'plugin/nf-validation'
+// include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
+include { paramsHelp         } from 'plugin/nf-validation'
+include { paramsSummaryLog   } from 'plugin/nf-validation'
+include { validateParameters } from 'plugin/nf-validation'
 
 /*
 ========================================================================================
@@ -42,7 +42,7 @@ workflow UTILS_NFVALIDATION_PLUGIN {
     // Print help message if needed
     //
     if (params.help) {
-    log.info paramsHelp("nextflow run my_pipeline --input input_file.csv")
+    log.info paramsHelp("nextflow run jimmyliu1326/SamnTrek -r [vers] --input samples.csv [...]")
     exit 0
     }
 
