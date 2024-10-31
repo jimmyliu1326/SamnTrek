@@ -4,10 +4,11 @@ include { PPSKETCHLIB_SKETCH                 } from '../../../modules/local/ppsk
 include { PARSE_DIST                         } from '../../../modules/local/parse_dist/main.nf'
 include { DIST2NGBRS                         } from '../../../modules/local/dist2ngbrs/main.nf'
 include { MERGE_DELIM                        } from '../../../modules/local/merge_delim/main.nf'
+include { RENAME_FASTA                       } from '../../../modules/local/rename_fasta/main.nf'
 
 workflow SEARCH {
 
-    take: 
+    take:
     asm // channel: [meta, path(fasta)]
     cluster // channel: [meta, val(cluster_id)]
 
@@ -15,14 +16,16 @@ workflow SEARCH {
     // initialize channels
     ch_versions = Channel.empty()
     ch_db = file(params.db, checkIfExists: true)
-    
-    PPSKETCHLIB_SKETCH(asm)
+
+    RENAME_FASTA(asm)
+
+    PPSKETCHLIB_SKETCH(RENAME_FASTA.out.fasta)
     ch_versions = ch_versions.mix(PPSKETCHLIB_SKETCH.out.versions)
 
     PPSKETCHLIB_SKETCH.out.sketch
       .join(cluster)
       .set { ch_search }
-    
+
     PPSKETCHLIB_DIST(ch_search, ch_db)
     ch_versions = ch_versions.mix(PPSKETCHLIB_DIST.out.versions)
 
