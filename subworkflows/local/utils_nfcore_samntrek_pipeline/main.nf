@@ -78,8 +78,9 @@ workflow PIPELINE_INITIALISATION {
     //// --wf param
     wf = params.wf.tokenize(',')
     valid_wf = ['download_db', 'sort', 'search', 'fetch_hits', 'contextualize', 'all']
-    if ( !wf.any { valid_wf.contains(it) } ) {
-        log.error "No valid workflow (--wf) specified. Please choose from: ${valid_wf}"
+    mismatch = wf.findAll { !valid_wf.contains(it) }
+    if ( mismatch ) {
+        log.error "${mismatch} is an invalid choice for --wf. Please choose from: ${valid_wf}"
         exit 1
     }
     valid_tree_method = ['mash', 'cgmlst']
@@ -123,7 +124,7 @@ workflow PIPELINE_INITIALISATION {
         ch_samplesheet = [ [id:''] ]
 
     }
-    
+
     emit:
     samplesheet = ch_samplesheet
     versions    = ch_versions
