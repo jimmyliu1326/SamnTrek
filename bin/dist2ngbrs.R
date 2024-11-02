@@ -41,17 +41,17 @@ hdbscan_opt <- function(mat, minpts) {
   clust_stats <- future_map(minpts, function(x) {
     clust <- hdbscan(as.data.frame(mat[,c('core', 'accessory')]), minPts = x)
     nonzero_clust <- which(clust$cluster != 0)
-    if (length(nonzero_clust) == 0) { 
+    if (length(nonzero_clust) == 0) {
       return(
         list(
           'score' = NA,
           'clusters_n' = 0
-        ) 
+        )
       )
-      
+
     }
     sil <- silhouette(
-        clust$cluster[nonzero_clust], 
+        clust$cluster[nonzero_clust],
         dist(mat[nonzero_clust,c('core', 'accessory')])
     )
     score <- mean(sil[,3])
@@ -117,7 +117,7 @@ hdbscan_search <- function(
     } else {
       opt_minpts <- clust_stats_df$minpts[which.max(clust_stats_df$sil)]
     }
-    
+
     cat("Optimal minPts: ", opt_minpts, "\n")
     if (length(opt_minpts) == 0) {
       cat("No valid optimal minPts found...\n")
@@ -134,7 +134,7 @@ hdbscan_search <- function(
         'opt_minpts' = opt_minpts
       )
     )
-    
+
 }
 
 distance_search <- function(
@@ -144,8 +144,8 @@ distance_search <- function(
     top_hits = 2000 # maximum number of top hits to return
 ) {
   cat("Searching by distance...\n")
-  mat.filt <- mat %>% 
-    filter(core <= max_core, 
+  mat.filt <- mat %>%
+    filter(core <= max_core,
            accessory <= max_accessory)
   return(mat.filt)
 }
@@ -224,7 +224,7 @@ main_search <- function(
           res[['total_hits']]  <- NULL
         } else {
           res[['total_hits']]  <- nrow(m)
-        } 
+        }
         # keep top hits
         m <- m %>%
           mutate(dist = sqrt(core^2+accessory^2)) %>%
@@ -240,7 +240,7 @@ main_search <- function(
     } else {
         set.seed(123) # set seed
         # subsampling
-        if ( !is.null(res[['subsample']]) ) { 
+        if ( !is.null(res[['subsample']]) ) {
             cat("Subsampling", subsample, "subject sequences...\n")
             res[['hdbscan_mat']] <- sample_n(res[['mat']], res[['subsample']])
         } else {
@@ -263,13 +263,13 @@ main_search <- function(
           res[['cluster']] <- dbscan.fit[['fit']]$cluster
         } else {
           res [['cluster']] <- NA
-        }        
+        }
         # find cluster with minimum distance to origin
         cat("Calculating cluster centroids...\n")
-        res[['centroids']] <- res[['hdbscan_mat']] %>% 
+        res[['centroids']] <- res[['hdbscan_mat']] %>%
           cbind(cluster = res[['cluster']]) %>%
-          filter(!is.na(cluster)) %>% 
-          group_by(cluster) %>% 
+          filter(!is.na(cluster), cluster != 0) %>%
+          group_by(cluster) %>%
           summarize(avg_core = mean(core),
                     avg_accessory = mean(accessory))
         # stop if there are no valid centroids
@@ -283,38 +283,38 @@ main_search <- function(
           cat("Setting accessory distance threshold to: ", res[['accessory']], "\n")
           cat("To override this, please specify a value using --distance\n")
         } else {
-          res[['cluster_id']] <- res[['centroids']] %>% 
-            ungroup() %>% 
-            mutate(dist = sqrt(avg_core^2+avg_accessory^2)) %>% 
-            arrange(dist) %>% 
-            slice(1) %>% 
+          res[['cluster_id']] <- res[['centroids']] %>%
+            ungroup() %>%
+            mutate(dist = sqrt(avg_core^2+avg_accessory^2)) %>%
+            arrange(dist) %>%
+            slice(1) %>%
             pull(cluster)
           cat("Nearest cluster ID to origin:", res[['cluster_id']], "\n")
           res[['clusters_n']] <- nrow(res[['centroids']])
           # maximum coordinate of the nearest cluster
           idx <- res[['cluster']] == res[['cluster_id']]
-          max_core <- res[['hdbscan_mat']] %>% 
-            filter(idx) %>% 
+          max_core <- res[['hdbscan_mat']] %>%
+            filter(idx) %>%
             pull(core) %>%
             max()
-          max_accessory <- res[['hdbscan_mat']] %>% 
-            filter(idx) %>% 
+          max_accessory <- res[['hdbscan_mat']] %>%
+            filter(idx) %>%
             pull(accessory) %>%
             max()
-          # update accessory threshold based on the max accessory 
+          # update accessory threshold based on the max accessory
           # coordinate of the nearest cluster
           res[['accessory']] <- max_accessory
           res[['core']] <- max_core
         }
         # Filter IDs within the max coordinates
-        mat.filt <- res[['mat']] %>% 
+        mat.filt <- res[['mat']] %>%
             filter(
-              core <= res[['core']], 
+              core <= res[['core']],
               #accessory <= -1*res[['accessory']]/res[['core']]*core+res[['accessory']]
               accessory <= res[['accessory']]
             )
-        res[['total_hits']] <- nrow(mat.filt)        
-        res[['ngbrs_ids']] <- mat.filt %>% 
+        res[['total_hits']] <- nrow(mat.filt)
+        res[['ngbrs_ids']] <- mat.filt %>%
           mutate(dist = sqrt(core^2+accessory^2)) %>%
           arrange(dist) %>%
           slice(1:if_else(nrow(.) >= top_hits, top_hits, nrow(.))) %>%
@@ -337,7 +337,8 @@ plot_dist <- function(
 ) {
   # bind cluster assigments if available
   if (!is.null(centroids)) {
-    mat <- cbind(mat, cluster = clusters)
+    mat <- cbind(mat, cluster = clusters) %>%
+            mutate(cluster = if_else(cluster == 0, NA, cluster)) # convert noise points to null cluster
   }
   # base plot
   p <- mat %>%
@@ -352,14 +353,14 @@ plot_dist <- function(
   # add layers dependent on search method
   if ( is.null(centroids)) {
     p <- p +
-      geom_point(alpha = 0.5) 
+      geom_point(alpha = 0.5)
   } else {
     p <- p +
       geom_point(aes(color = as.factor(cluster)), alpha = 0.5) +
       # geom_vline(xintercept = maxDist[1], linetype = "dashed", color = 'red') +
       # geom_hline(yintercept = maxDist[2], linetype = "dashed", color = 'red') +
       scale_colour_discrete(na.value="gray") +
-      stat_ellipse(data = filter(mat, !is.na(cluster)), 
+      stat_ellipse(data = filter(mat, !is.na(cluster)),
                   aes(colour = as.factor(cluster)),
                   linewidth = 1,
                   show.legend = F,
@@ -417,7 +418,7 @@ if (args$minPts == "auto" & args$distance == "auto") {
       as.numeric(unlist(str_split(args$minPts, ','))[3])
     )
   }
-  
+
 }
 # main search
 search_res <- main_search(
