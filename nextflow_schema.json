@@ -99,6 +99,10 @@
                         "mash",
                         "cgmlst"
                     ]
+                },
+                "chewbbaca_scheme": {
+                    "type": "string",
+                    "description": "Path to any custom chewBBACA-compatible scheme. Applicable when --tree_method cgmlst is supplied. By default, the Enterobase 3,000 Salmonella cgMLST scheme is used."
                 }
             }
         },
