@@ -23,7 +23,10 @@ workflow CONTEXTUALIZE {
         ch_matrix = MASHTREE.out.matrix
     } else if ( params.tree_method == 'cgmlst' ) {
         // cgmlst allele calling
-        CHEWBBACA_ALLELECALL(fasta)
+        ch_scheme = fasta.map { meta,path ->
+            params.chewbbaca_scheme ? file(params.chewbbaca_scheme, checkIfExists: true) : []
+        }
+        CHEWBBACA_ALLELECALL(fasta, ch_scheme)
         ch_versions = ch_versions.mix(CHEWBBACA_ALLELECALL.out.versions)
         ch_alleles = CHEWBBACA_ALLELECALL.out.alleles
         ch_alleles_h = CHEWBBACA_ALLELECALL.out.alleles_hashed
